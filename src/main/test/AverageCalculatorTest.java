@@ -10,24 +10,24 @@ public class AverageCalculatorTest {
     }
 
     private void assertEmpty(AverageCalculator a) {
-        assertEquals(0, a.n);
-        assertEquals(0, a.total);
+        assertEquals(0, a.getNumberOfItems());
+        assertEquals(0, a.getTotal());
     }
 
     @Test
     public void testAdd() {
         AverageCalculator a = new AverageCalculator();
         a.addData(10);
-        assertEquals(1, a.n);
-        assertEquals( 10, a.total);
+        assertEquals(1, a.getNumberOfItems());
+        assertEquals( 10, a.getTotal());
 
         a.addData(3);
-        assertEquals(2, a.n);
-        assertEquals(13, a.total);
+        assertEquals(2, a.getNumberOfItems());
+        assertEquals(13, a.getTotal());
 
         a.addData(2);
-        assertEquals(3, a.n);
-        assertEquals(15, a.total);
+        assertEquals(3, a.getNumberOfItems());
+        assertEquals(15, a.getTotal());
     }
 
     @Test

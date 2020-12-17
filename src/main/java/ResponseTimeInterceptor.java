@@ -3,9 +3,9 @@ import ca.uhn.fhir.rest.client.api.IHttpRequest;
 import ca.uhn.fhir.rest.client.api.IHttpResponse;
 
 public class ResponseTimeInterceptor implements IClientInterceptor {
-    boolean ignoreRequest;
-    String urlPrefix;
-    AverageCalculator averageCalculator;
+    private boolean ignoreRequest;
+    private String urlPrefix;
+    private AverageCalculator averageCalculator;
 
     public ResponseTimeInterceptor(String urlPrefix) {
         this.averageCalculator = new AverageCalculator();
@@ -24,6 +24,10 @@ public class ResponseTimeInterceptor implements IClientInterceptor {
         ignoreRequest = !iHttpRequest.getUri().startsWith(urlPrefix);
     }
 
+    boolean willIgnoreRequest() {
+        return ignoreRequest;
+    }
+
     @Override
     public void interceptResponse(IHttpResponse iHttpResponse) {
         if (!ignoreRequest) {
@@ -31,7 +35,7 @@ public class ResponseTimeInterceptor implements IClientInterceptor {
         }
     }
 
-     double getAverageResponseTime() {
+    double getAverageResponseTime() {
         return averageCalculator.getAverage();
     }
 

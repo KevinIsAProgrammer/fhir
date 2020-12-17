@@ -1,19 +1,30 @@
+import ca.uhn.fhir.rest.client.api.IHttpRequest;
+import ca.uhn.fhir.rest.client.api.IHttpResponse;
+import ca.uhn.fhir.util.StopWatch;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class ResponseTimeInterceptorTest {
 
     @Test
-    public void testInterceptRequest() {
-        ResponseTimeInterceptor r = new ResponseTimeInterceptor("base/Patient", new MockAverageCalculator());
-        assertEquals("base/Patient", r.urlPrefix);
+    public void testInterceptPatientRequest() {
+        ResponseTimeInterceptor r = new ResponseTimeInterceptor("base/Patient", new AverageCalculator());
 
-        r.interceptRequest(new MockIHttpRequest("base/Patient?NAME=SMITH"));
-        assertFalse(r.ignoreRequest);
+        IHttpRequest req = mock(IHttpRequest.class);
+        when(req.getUri()).thenReturn("base/Patient?NAME=SMITH");
+        r.interceptRequest(req);
+        assertFalse(r.willIgnoreRequest());
+    }
 
-        r.interceptRequest(new MockIHttpRequest("base/Meta"));
-        assertTrue(r.ignoreRequest);
+    public void testInterceptMetaRequest() {
+        ResponseTimeInterceptor r = new ResponseTimeInterceptor("base/Patient", new AverageCalculator());
+
+        IHttpRequest request = mock(IHttpRequest.class);
+        when(request.getUri()).thenReturn("base/Meta");
+        r.interceptRequest(request);
+        assertTrue(r.willIgnoreRequest());
     }
 
     // ensure that when our response interceptor is called for a request that we shouldn't ignore,
@@ -22,14 +33,18 @@ public class ResponseTimeInterceptorTest {
     @Test
     public void testNormalInterceptResponse() {
         long mockResponseTime = 1000;
-        MockAverageCalculator t = new MockAverageCalculator();
+        AverageCalculator c = new AverageCalculator();
+        ResponseTimeInterceptor r = new ResponseTimeInterceptor("base/Patient", c);
 
-        ResponseTimeInterceptor r = new ResponseTimeInterceptor("base/Patient", t);
-        r.ignoreRequest = false;
-        r.interceptResponse(new MockIHttpResponse(mockResponseTime));
+        StopWatch stopWatch = mock(StopWatch.class);
+        when(stopWatch.getMillis()).thenReturn(mockResponseTime);
+        IHttpResponse response = mock(IHttpResponse.class);
+        when(response.getRequestStopWatch()).thenReturn(stopWatch);
 
-        assertTrue(t.addCalled);
-        assertEquals(mockResponseTime, t.valueToAdd);
+        assertFalse(r.willIgnoreRequest());
+        r.interceptResponse(response);
+        assertEquals(mockResponseTime, c.getTotal());
+        assertEquals(1, c.getNumberOfItems());
     }
 
     // Ensure that when our response interceptor is called for a request that it should ignore,
@@ -37,35 +52,45 @@ public class ResponseTimeInterceptorTest {
     @Test
     public void testIgnoredInterceptResponse() {
         long mockResponseTime = 1000;
-        MockAverageCalculator t = new MockAverageCalculator();
+        AverageCalculator c = new AverageCalculator();
+        ResponseTimeInterceptor r = new ResponseTimeInterceptor("base/Patient", c);
 
-        ResponseTimeInterceptor r = new ResponseTimeInterceptor("base/Patient", t);
-        r.ignoreRequest = true;
-        r.interceptResponse(new MockIHttpResponse(mockResponseTime));
-        assertFalse(t.addCalled);
+        // set up a request to ignore our response
+        IHttpRequest request = mock(IHttpRequest.class);
+        when(request.getUri()).thenReturn("base/Meta");
+        r.interceptRequest(request);
+
+        StopWatch stopWatch = mock(StopWatch.class);
+        when(stopWatch.getMillis()).thenReturn(mockResponseTime);
+        IHttpResponse response = mock(IHttpResponse.class);
+        when(response.getRequestStopWatch()).thenReturn(stopWatch);
+
+        assertTrue(r.willIgnoreRequest());
+        r.interceptResponse(response);
+        assertEquals(0, c.getTotal());
+        assertEquals(0, c.getNumberOfItems());
+
     }
 
     // ensure that we get the average sent by our average calculator
     @Test
     public void getAverageResponseTime() {
-        MockAverageCalculator t = new MockAverageCalculator();
-        assertFalse(t.averageCalled);
-        ResponseTimeInterceptor r = new ResponseTimeInterceptor("abc", t);
+        double mockAverage = 100.0;
+        AverageCalculator c = mock(AverageCalculator.class);
+        when(c.getAverage()).thenReturn(mockAverage);
+        ResponseTimeInterceptor r = new ResponseTimeInterceptor("abc", c);
 
         // ensure that we return the same average that our mock average calculator always computes
-        assertEquals(100.0, r.getAverageResponseTime(), 0.00000000000001);
-        // ensure that we called our mock average calculator
-        assertTrue(t.averageCalled);
+        assertEquals(mockAverage, r.getAverageResponseTime(), 0.00000000000001);
     }
 
     // ensure that when we call reset, our calculator resets it's state
     @Test
     public void reset() {
-        MockAverageCalculator t = new MockAverageCalculator();
-        assertFalse(t.resetCalled);
-        ResponseTimeInterceptor r = new ResponseTimeInterceptor("abc", t);
+        AverageCalculator c = mock(AverageCalculator.class);
+        ResponseTimeInterceptor r = new ResponseTimeInterceptor("abc", c);
         r.reset();
-        assertTrue(t.resetCalled);
+        verify(c).reset();
     }
 }
 

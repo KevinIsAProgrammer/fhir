@@ -1,6 +1,6 @@
 class AverageCalculator {
-    long total = 0;
-    long n = 0;
+    private long total = 0;
+    private long n = 0;
 
     public double getAverage() {
         if (n == 0) {
@@ -17,5 +17,13 @@ class AverageCalculator {
     public void addData(long amount) {
         total += amount;
         n += 1;
+    }
+
+    public long getTotal() {
+        return total;
+    }
+
+    public long getNumberOfItems() {
+        return n;
     }
 }

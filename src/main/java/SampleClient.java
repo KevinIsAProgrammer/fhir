@@ -13,7 +13,7 @@ import java.util.Locale;
 public class SampleClient {
 
     public static void main(String[] theArgs) throws IOException {
-        String serverBase="http://hapi.fhir.org/baseR4";
+        String serverBase = "http://hapi.fhir.org/baseR4";
         // Create a FHIR client
         FhirContext fhirContext = FhirContext.forR4();
         IGenericClient cachingClient = fhirContext.newRestfulGenericClient(serverBase);
